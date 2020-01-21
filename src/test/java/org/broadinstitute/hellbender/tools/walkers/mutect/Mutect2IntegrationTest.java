@@ -556,6 +556,7 @@ public class Mutect2IntegrationTest extends CommandLineProgramTest {
                 args -> args.addNumericArgument(M2FiltersArgumentCollection.MIN_AF_LONG_NAME, minAlleleFraction),
                 args -> args.addNumericArgument(M2FiltersArgumentCollection.MEDIAN_AUTOSOMAL_COVERAGE_LONG_NAME, autosomalCoverage),
                 args -> args.addNumericArgument(M2FiltersArgumentCollection.MAX_NUMT_COPIES_IN_AUTOSOME_LONG_NAME, 4.0),
+                args -> args.addNumericArgument(M2FiltersArgumentCollection.MIN_READS_ON_EACH_STRAND_LONG_NAME, 1),
                 args -> {
                     intervals.stream().map(SimpleInterval::new).forEach(args::addInterval);
                     return args;
