@@ -35,7 +35,7 @@ public class DocumentationGenerationIntegrationTest extends CommandLineProgramTe
     };
 
     @Test
-    public static void documentationSmokeTest() throws IOException {
+    public static void documentationSmokeTest() {
         File docTestTarget = createTempDir("docgentest");
         String[] argArray = new String[]{
                 "javadoc",

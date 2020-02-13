@@ -5,21 +5,24 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-import org.broadinstitute.barclay.argparser.Hidden;
 import org.broadinstitute.barclay.help.*;
-import org.broadinstitute.barclay.utils.JVMUtils;
+import org.broadinstitute.hellbender.cmdline.RuntimeProperties;
+import org.broadinstitute.hellbender.tools.validation.CompareBaseQualities;
 
 import java.io.*;
 import java.util.List;
 import java.util.Map;
 
 //TODO: deal with feature inputs with tags
-//TODO: positional args (CompareSAMs)
+//TODO: positional args (CompareSAMs, CompareBaseQualities)
 //TODO: filter out EXPERIMENTAL/BETA ?
 //TODO: add includeInDocs call from baseclass
-//TODO: remove "--" from barclay args
 //TODO: remove ARGUMENTS_FILE (arguments_file)
 //TODO: generalize build.gradle womtool jar location
+
+//TODO Barclay:
+// expos Doclet.processPositionalArguments
+//TODO: remove "--" from barclay args
 
 /**
  * Custom Barclay-based Javadoc Doclet used for generating GATK tools WDLS.
@@ -56,6 +59,9 @@ public class GATKWDLDoclet extends HelpDoclet {
     public boolean includeInDocs(final DocumentedFeature documentedFeature, final ClassDoc classDoc, final Class<?> clazz) {
         // for WDL gen, we want to filter out and DocumentedFeatures that are not CommandLinePrograms
         return super.includeInDocs(documentedFeature, classDoc, clazz) &&
+                //clazz.getAnnotation(RuntimeProperties.class) != null &&
+                //TODO: remove this filter (CompareBaseQualities has Positional args)
+                clazz != CompareBaseQualities.class &&
                 clazz.getAnnotation(CommandLineProgramProperties.class) != null;
     }
 

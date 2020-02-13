@@ -27,13 +27,11 @@ public class WDLGenerationIntegrationTest extends CommandLineProgramTest {
             "org.broadinstitute.hellbender.tools.walkers.bqsr",
             "org.broadinstitute.hellbender.tools.walkers.vqsr",
             "org.broadinstitute.hellbender.tools.walkers.variantutils",
-            //TODO: not sure we can properly annotate picard
-            "picard.fingerprint",
-            "picard.analysis"
+            //not including any Picard tools yet
     };
 
     @Test
-    public static void documentationSmokeTest() throws IOException {
+    public static void wdlGenSmokeTest() {
         File docTestTarget = createTempDir("wdlgentest");
         String[] argArray = new String[]{
                 "javadoc",

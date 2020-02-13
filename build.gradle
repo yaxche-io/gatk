@@ -753,9 +753,9 @@ task gatkWDLGen(type: Javadoc, dependsOn: classes) {
             into gatkWDLDir
         }
     }
-    // Include the Picard source jar, which contains various .R, .sh, .css, .html, .xml and .MF files and
-    // other resources, but we only want the files that javadoc can handle, so just take the .java files.
-    source = sourceSets.main.allJava + files(configurations.externalSourceConfiguration.collect { zipTree(it) })
+    // NOTE: For now we don't generate WDL for Picard tools since they're not annotated, so we don't include
+    // the Picard source jar for this task.
+    source = sourceSets.main.allJava
     include '**/*.java'
 
     // The gatkWDLGen process instantiates any documented feature classes, so to run it we need the entire

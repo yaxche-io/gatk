@@ -3,6 +3,7 @@ package org.broadinstitute.hellbender.tools;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import org.broadinstitute.barclay.help.DocumentedFeature;
+import org.broadinstitute.hellbender.cmdline.RuntimeProperties;
 import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
 import picard.cmdline.programgroups.ReadDataManipulationProgramGroup;
 import org.broadinstitute.hellbender.engine.FeatureContext;
@@ -83,6 +84,7 @@ import org.broadinstitute.hellbender.utils.read.SAMFileGATKReadWriter;
         programGroup = ReadDataManipulationProgramGroup.class
 )
 @DocumentedFeature
+@RuntimeProperties
 public final class PrintReads extends ReadWalker {
 
     @Argument(fullName = StandardArgumentDefinitions.OUTPUT_LONG_NAME,
