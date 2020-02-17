@@ -56,7 +56,7 @@ workflow ${name} {
   }
 
   output {
-    # workflowoutput TBD
+    <@workflowoutputs name="Workflow Outputs" outputs=RuntimeOutputs/>
   }
 }
 
@@ -65,10 +65,10 @@ task ${name}Task {
 
   input {
       <#if arguments.all?size != 0>
-          <@taskintput name="Positional Arguments" argsToUse=arguments.positional/>
-          <@taskintput name="Required Arguments" argsToUse=arguments.required/>
-          <@taskintput name="Optional Tool Arguments" argsToUse=arguments.optional/>
-          <@taskintput name="Optional Common Arguments" argsToUse=arguments.common/>
+          <@taskinput name="Positional Arguments" argsToUse=arguments.positional/>
+          <@taskinput name="Required Arguments" argsToUse=arguments.required/>
+          <@taskinput name="Optional Tool Arguments" argsToUse=arguments.optional/>
+          <@taskinput name="Optional Common Arguments" argsToUse=arguments.common/>
       </#if>
 
   }
@@ -78,7 +78,7 @@ task ${name}Task {
   >>>
 
   output {
-    # TBD
+    <@taskoutputs name="Task Outputs" outputs=RuntimeOutputs/>
   }
  }
 
@@ -124,10 +124,32 @@ task ${name}Task {
     </#if>
 </#macro>
 
-<#macro taskintput name argsToUse>
+<#macro taskinput name argsToUse>
     <#if argsToUse?size != 0>
     <#list argsToUse as arg>
     ${arg.type}<#if !name?starts_with("Required")>? </#if>  ${arg.name?substring(2)}
     </#list>
     </#if>
+</#macro>
+
+<#macro workflowoutputs name outputs>
+    #output {
+    #    File funcotated_file_out = Funcotate.funcotated_output_file
+    #    File funcotated_file_out_idx = Funcotate.funcotated_output_file_index
+    #}
+    # ${name?right_pad(50)}
+    <#list outputs as outputFile>
+    ${outputFile}
+    </#list>
+</#macro>
+
+<#macro taskoutputs name outputs>
+    #output {
+    #    File funcotated_output_file = "${output_file}"
+    #    File funcotated_output_file_index = "${output_file_index}"
+    #}
+    # ${name?right_pad(50)}
+    <#list outputs as outputFile>
+    ${outputFile}
+    </#list>
 </#macro>

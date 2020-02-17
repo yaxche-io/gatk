@@ -13,16 +13,15 @@ import java.io.*;
 import java.util.List;
 import java.util.Map;
 
+//TODO: deal with companion files (index, ref index, dict)
+//TODO: runtime properties
 //TODO: deal with feature inputs with tags
 //TODO: positional args (CompareSAMs, CompareBaseQualities)
-//TODO: filter out EXPERIMENTAL/BETA ?
-//TODO: add includeInDocs call from baseclass
 //TODO: remove ARGUMENTS_FILE (arguments_file)
 //TODO: generalize build.gradle womtool jar location
-
 //TODO Barclay:
-// expos Doclet.processPositionalArguments
-//TODO: remove "--" from barclay args
+// expose Doclet.processPositionalArguments
+// remove "--" from barclay args
 
 /**
  * Custom Barclay-based Javadoc Doclet used for generating GATK tools WDLS.
@@ -59,7 +58,7 @@ public class GATKWDLDoclet extends HelpDoclet {
     public boolean includeInDocs(final DocumentedFeature documentedFeature, final ClassDoc classDoc, final Class<?> clazz) {
         // for WDL gen, we want to filter out and DocumentedFeatures that are not CommandLinePrograms
         return super.includeInDocs(documentedFeature, classDoc, clazz) &&
-                //clazz.getAnnotation(RuntimeProperties.class) != null &&
+                clazz.getAnnotation(RuntimeProperties.class) != null &&
                 //TODO: remove this filter (CompareBaseQualities has Positional args)
                 clazz != CompareBaseQualities.class &&
                 clazz.getAnnotation(CommandLineProgramProperties.class) != null;

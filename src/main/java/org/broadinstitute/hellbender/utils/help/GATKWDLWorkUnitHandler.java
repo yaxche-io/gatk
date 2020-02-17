@@ -3,6 +3,7 @@ package org.broadinstitute.hellbender.utils.help;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import org.broadinstitute.barclay.argparser.CommandLineArgumentParser;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import org.broadinstitute.barclay.argparser.NamedArgumentDefinition;
 import org.broadinstitute.barclay.help.DefaultDocWorkUnitHandler;
@@ -73,6 +74,9 @@ public class GATKWDLWorkUnitHandler extends DefaultDocWorkUnitHandler {
             }
         };
 
+
+    private List<String> outputFiles = new ArrayList<>();
+
     public GATKWDLWorkUnitHandler(final HelpDoclet doclet) {
         super(doclet);
     }
@@ -85,6 +89,26 @@ public class GATKWDLWorkUnitHandler extends DefaultDocWorkUnitHandler {
      */
     @Override
     public String getTemplateName(final DocWorkUnit workUnit) { return GATK_FREEMARKER_TEMPLATE_NAME; }
+
+    @Override
+    protected void addCommandLineArgumentBindings(final DocWorkUnit currentWorkUnit, final CommandLineArgumentParser clp) {
+        outputFiles.clear();
+
+        // call superclass to process all of the output
+        super.addCommandLineArgumentBindings(currentWorkUnit, clp);
+
+        // now emit all the output args into the freemarker map
+        if (outputFiles.isEmpty()) {
+            throw new GATKException(String.format(
+                    "%s: Files with RuntimeProperties must specify one or more output params of type GATKOutputPath",
+                    currentWorkUnit.getName()));
+        }
+
+//        final HashMap<String, String> outputMap = new HashMap<>();
+        final List<String> outputList = new ArrayList<>();
+        outputFiles.forEach(f -> outputList.add(f));
+        currentWorkUnit.getRootMap().put("RuntimeOutputs", outputList);
+    }
 
     @Override
     protected String processNamedArgument(
@@ -116,6 +140,11 @@ public class GATKWDLWorkUnitHandler extends DefaultDocWorkUnitHandler {
         // WDL doesn't accept "-", so change to non-kebab w/underscore
         wdlName = wdlName.substring(2).replace("-", "_");
         argBindings.put("name", "--" + wdlName);
+
+        // finally, keep track of the outputs
+        if (GATKOutputPath.class.isAssignableFrom((argDef.getUnderlyingField().getType()))) {
+            outputFiles.add(wdlName);
+        }
 
         return argCategory;
     }
