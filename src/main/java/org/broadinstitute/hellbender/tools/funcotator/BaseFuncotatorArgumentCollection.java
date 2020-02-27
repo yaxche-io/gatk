@@ -15,18 +15,25 @@ import java.util.Set;
 abstract class BaseFuncotatorArgumentCollection implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    protected enum FuncotatorReferenceVersion {
-        hg19("hg19"),hg38("hg38"),b37("b37");
+//    protected enum FuncotatorReferenceVersion {
+//        hg19("hg19"),hg38("hg38"),b37("b37");
+//
+//        private final String stringRepresentation;
+//
+//        FuncotatorReferenceVersion(final String stringRepresentation) {
+//            this.stringRepresentation = stringRepresentation;
+//        }
+//
+//        @Override
+//        public String toString() { return stringRepresentation; }
+//    }
 
-        private final String stringRepresentation;
-
-        FuncotatorReferenceVersion(final String stringRepresentation) {
-            this.stringRepresentation = stringRepresentation;
-        }
-
-        @Override
-        public String toString() { return stringRepresentation; }
-    }
+    /** String representing the b37 version of the homo sapiens reference. */
+    protected static String FuncotatorReferenceVersionB37 = "b37";
+    /** String representing the hg19 version of the homo sapiens reference. */
+    protected static String FuncotatorReferenceVersionHg19 = "hg19";
+    /** String representing the hg38 version of the homo sapiens reference. */
+    protected static String FuncotatorReferenceVersionHg38 = "hg38";
 
     @Argument(
             shortName = StandardArgumentDefinitions.OUTPUT_SHORT_NAME,
@@ -38,7 +45,7 @@ abstract class BaseFuncotatorArgumentCollection implements Serializable {
             fullName =  FuncotatorArgumentDefinitions.REFERENCE_VERSION_LONG_NAME,
             doc = "The version of the Human Genome reference to use (e.g. hg19, hg38, etc.).  This will correspond to a sub-folder of each data source corresponding to that data source for the given reference."
     )
-    public FuncotatorReferenceVersion referenceVersion;
+    public String referenceVersion;
 
     @Argument(
             fullName =  FuncotatorArgumentDefinitions.DATA_SOURCES_PATH_LONG_NAME,
