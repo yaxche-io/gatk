@@ -288,9 +288,10 @@ final public class EnsemblGtfCodec extends AbstractGtfCodec<GencodeGtfFeature> {
         if (feature.getGeneName() == null) {
             return false;
         }
-        if (feature.getLocusLevel() == null) {
-            return false;
-        }
+        // This does not seem to be present in ENSEMBL:
+//        if (feature.getLocusLevel() == null) {
+//            return false;
+//        }
 
         if ( featureType != GencodeGtfFeature.FeatureType.GENE) {
             if (feature.getTranscriptId() == null) {

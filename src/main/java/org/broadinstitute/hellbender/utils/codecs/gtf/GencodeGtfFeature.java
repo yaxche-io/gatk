@@ -143,6 +143,10 @@ public abstract class GencodeGtfFeature implements Feature, Comparable<GencodeGt
                 case "gene_type":
                     baseData.geneType = GeneTranscriptType.getEnum(fieldValue);
                     break;
+                // For ENSEMBL GTF files:
+                case "gene_biotype":
+                    baseData.geneType = GeneTranscriptType.getEnum(fieldValue);
+                    break;
                 case "gene_status":
                     baseData.geneStatus = GeneTranscriptStatus.valueOf(fieldValue);
                     break;
@@ -150,6 +154,9 @@ public abstract class GencodeGtfFeature implements Feature, Comparable<GencodeGt
                     baseData.geneName = fieldValue;
                     break;
                 case "transcript_type":
+                    baseData.transcriptType = GeneTranscriptType.getEnum(fieldValue);
+                    break;
+                case "transcript_biotype":
                     baseData.transcriptType = GeneTranscriptType.getEnum(fieldValue);
                     break;
                 case "transcript_status":
@@ -710,7 +717,8 @@ public abstract class GencodeGtfFeature implements Feature, Comparable<GencodeGt
      */
     public enum AnnotationSource {
         ENSEMBL,
-        HAVANA
+        HAVANA,
+        ena
     }
 
     /**
@@ -892,12 +900,17 @@ public abstract class GencodeGtfFeature implements Feature, Comparable<GencodeGt
         MIRNA("miRNA"),
         MISC_RNA("misc_RNA"),
         RRNA("rRNA"),
+
         SCRNA("scRNA"),
         SNRNA("snRNA"),
         SNORNA("snoRNA"),
         RIBOZYME("ribozyme"),
         SRNA("sRNA"),
         SCARNA("scaRNA"),
+
+        // ENSEMBL-Specific values:
+        TRNA("tRNA"),
+        TMRNA("tmRNA"),
 
         // Non-coding RNA predicted to be pseudogene by the Ensembl pipeline
         MT_TRNA_PSEUDOGENE("Mt_tRNA_pseudogene"),
@@ -1009,7 +1022,13 @@ public abstract class GencodeGtfFeature implements Feature, Comparable<GencodeGt
         }
 
         public static GeneTranscriptType getEnum(final String s) {
-            final String lowerS = s.toLowerCase();
+            String lowerS = s.toLowerCase();
+
+            // Special cases:
+            if ( lowerS.equals("ncrna") ) {
+                lowerS = "non_coding";
+            }
+
             if ( VALUE_MAP.containsKey(lowerS) ){
                 return VALUE_MAP.get(lowerS);
             }

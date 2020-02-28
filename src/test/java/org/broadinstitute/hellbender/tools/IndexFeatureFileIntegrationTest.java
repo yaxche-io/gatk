@@ -9,10 +9,8 @@ import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.broadinstitute.hellbender.CommandLineProgramTest;
 import org.broadinstitute.hellbender.Main;
-import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
 import org.broadinstitute.hellbender.engine.FeatureDataSource;
 import org.broadinstitute.hellbender.exceptions.UserException;
-import org.broadinstitute.hellbender.testutils.ArgumentsBuilder;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
 import org.testng.Assert;
@@ -408,6 +406,24 @@ public final class IndexFeatureFileIntegrationTest extends CommandLineProgramTes
 
         Assert.assertTrue(output.exists());
         Assert.assertTrue(output.length() > 0);
+    }
+
+    @Test
+    public void testEnsemblGtfIndex() {
+        final File testFile = new File("src/test/resources/org/broadinstitute/hellbender/tools/funcotator/ecoli_ds/gencode/ASM584v2/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.44.gtf");
+        final File outName = createTempFile("Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.44.gtf.", ".idx");
+
+        final String[] args = {
+                "-I" ,  testFile.getAbsolutePath(),
+                "-O" ,  outName.getAbsolutePath()
+        };
+        final Object res = this.runCommandLine(args);
+        Assert.assertEquals(res, outName.getAbsolutePath());
+
+        final Index index = IndexFactory.loadIndex(res.toString());
+        Assert.assertTrue(index instanceof LinearIndex);
+        Assert.assertEquals(index.getSequenceNames(), Arrays.asList("Chromosome"));
+        checkIndex(index, Arrays.asList("Chromosome"));
     }
 
 }
