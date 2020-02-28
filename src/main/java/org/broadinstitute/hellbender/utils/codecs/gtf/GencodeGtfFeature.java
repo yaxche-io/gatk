@@ -718,7 +718,7 @@ public abstract class GencodeGtfFeature implements Feature, Comparable<GencodeGt
     public enum AnnotationSource {
         ENSEMBL,
         HAVANA,
-        ena
+        ena // From ENSEMBLE GTFs
     }
 
     /**
@@ -1021,18 +1021,30 @@ public abstract class GencodeGtfFeature implements Feature, Comparable<GencodeGt
             return serialized;
         }
 
+        private static final Map<String, String> SPECIAL_CASE_STRING_VALUE_MAP = createSpecialCaseMap();
+
         public static GeneTranscriptType getEnum(final String s) {
             String lowerS = s.toLowerCase();
 
-            // Special cases:
-            if ( lowerS.equals("ncrna") ) {
-                lowerS = "non_coding";
-            }
+            // Handle special cases:
+            lowerS = SPECIAL_CASE_STRING_VALUE_MAP.getOrDefault(lowerS, lowerS);
 
             if ( VALUE_MAP.containsKey(lowerS) ){
                 return VALUE_MAP.get(lowerS);
             }
             throw new IllegalArgumentException("Unexpected value: " + s);
+        }
+
+        /**
+         * Create a special case map for alternate field names for known {@link GeneTranscriptType}s.
+         */
+        private static Map<String, String> createSpecialCaseMap() {
+            final Map<String, String> map = new HashMap<>();
+
+            // From ENSEMBLE GTF files:
+            map.put("ncrna", "non_coding");
+
+            return map;
         }
 
     }
