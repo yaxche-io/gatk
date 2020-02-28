@@ -452,15 +452,14 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
         boolean canDecode;
         try {
             // Simple file and name checks to start with:
-            Path p = IOUtil.getPath(inputFilePath);
+            final Path p = IOUtil.getPath(inputFilePath);
 
-            canDecode = p.getFileName().toString().toLowerCase().startsWith(GENCODE_GTF_FILE_PREFIX) &&
-                        p.getFileName().toString().toLowerCase().endsWith("." + GENCODE_GTF_FILE_EXTENSION);
+            canDecode =  p.getFileName().toString().toLowerCase().endsWith("." + GENCODE_GTF_FILE_EXTENSION);
 
             if (canDecode) {
 
                 // Crack open the file and look at the top of it:
-                try ( BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(p))) ) {
+                try ( final BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(p))) ) {
 
                     // TThe first HEADER_NUM_LINES compose the header of a valid GTF File:
                     final List<String> headerLines = new ArrayList<>(HEADER_NUM_LINES);
@@ -505,18 +504,23 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
 
     /**
      * Check if the given header of a tentative GENCODE GTF file is, in fact, the header to such a file.
+     * Will also return true if the file is a general GTF file (i.e. a GTF file that was not created and
+     * maintained by GENCODE).
      * @param header Header lines to check for conformity to GENCODE GTF specifications.
      * @param throwIfInvalid If true, will throw a {@link UserException.MalformedFile} if the header is invalid.
      * @return true if the given {@code header} is that of a GENCODE GTF file; false otherwise.
      */
     @VisibleForTesting
     static boolean validateHeader(final List<String> header, final boolean throwIfInvalid) {
+        return validateGencodeHeader(header, throwIfInvalid) || validateGeneralGtfHeader(header, throwIfInvalid);
+    }
 
+    private static boolean validateGencodeHeader(final List<String> header, final boolean throwIfInvalid) {
         if ( header.size() != HEADER_NUM_LINES) {
             if ( throwIfInvalid ) {
                 throw new UserException.MalformedFile(
                         "GENCODE GTF Header is of unexpected length: " +
-                        header.size() + " != " + HEADER_NUM_LINES);
+                                header.size() + " != " + HEADER_NUM_LINES);
             }
             else {
                 return false;
@@ -528,7 +532,7 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
             if ( throwIfInvalid ) {
                 throw new UserException.MalformedFile(
                         "GENCODE GTF Header line 1 does not contain expected description specification (" +
-                        "##description:): " + header.get(0));
+                                "##description:): " + header.get(0));
             }
             else {
                 return false;
@@ -551,7 +555,7 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
         if ( !versionMatcher.find() ) {
             if ( throwIfInvalid ) {
                 throw new UserException.MalformedFile(
-                        "GENCODE GTF Header line 1 does not contain version number: " +
+                        "GENCODE GTF Header line 1 does not contain a recognizable version number: " +
                                 header.get(0));
             }
             else {
@@ -572,8 +576,8 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
             }
 
             if (versionNumber > GENCODE_GTF_MAX_VERSION_NUM_INCLUSIVE) {
-                    logger.warn("GENCODE GTF Header line 1 has a version number that is above maximum tested version (v " + GENCODE_GTF_MAX_VERSION_NUM_INCLUSIVE + ") (given: " +
-                            versionNumber + "): " + header.get(0) + "   Continuing, but errors may occur.");
+                logger.warn("GENCODE GTF Header line 1 has a version number that is above maximum tested version (v " + GENCODE_GTF_MAX_VERSION_NUM_INCLUSIVE + ") (given: " +
+                        versionNumber + "): " + header.get(0) + "   Continuing, but errors may occur.");
             }
         }
         catch (final NumberFormatException ex) {
@@ -599,7 +603,7 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
         if ( !header.get(2).startsWith("##contact: gencode") ) {
             if ( throwIfInvalid ) {
                 throw new UserException.MalformedFile(
-                        "GENCODE GTF Header line 2 does not contain expected contact information (" +
+                        "GENCODE GTF Header line 3 does not contain expected contact information (" +
                                 "##contact: gencode): " + header.get(2));
             }
             else {
@@ -623,6 +627,77 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
                 throw new UserException.MalformedFile(
                         "GENCODE GTF Header line 5 does not contain expected date information (" +
                                 "##date:): " + header.get(4));
+            }
+            else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static boolean validateGeneralGtfHeader(final List<String> header, final boolean throwIfInvalid) {
+        if ( header.size() != HEADER_NUM_LINES) {
+            if ( throwIfInvalid ) {
+                throw new UserException.MalformedFile(
+                        "GTF Header is of unexpected length: " +
+                                header.size() + " != " + HEADER_NUM_LINES);
+            }
+            else {
+                return false;
+            }
+        }
+
+        // Check the normal commented fields:
+        if ( !header.get(0).startsWith("#!genome-build") ) {
+            if ( throwIfInvalid ) {
+                throw new UserException.MalformedFile(
+                        "GTF Header line 1 does not contain expected genome build specification (" +
+                                "#!genome-build): " + header.get(0));
+            }
+            else {
+                return false;
+            }
+        }
+
+        if ( !header.get(1).startsWith("#!genome-version") ) {
+            if ( throwIfInvalid ) {
+                throw new UserException.MalformedFile(
+                        "GTF Header line 2 does not contain expected version specification (" +
+                                "#!genome-version): " + header.get(1));
+            }
+            else {
+                return false;
+            }
+        }
+
+        if ( !header.get(2).startsWith("#!genome-date") ) {
+            if ( throwIfInvalid ) {
+                throw new UserException.MalformedFile(
+                        "GTF Header line 3 does not contain expected contact information (" +
+                                "#!genome-date): " + header.get(2));
+            }
+            else {
+                return false;
+            }
+        }
+
+        if ( !header.get(3).startsWith("#!genome-build-accession") ) {
+            if ( throwIfInvalid ) {
+                throw new UserException.MalformedFile(
+                        "GTF Header line 4 does not contain expected accession specification (" +
+                                "#!genome-build-accession): " + header.get(3));
+            }
+            else {
+                return false;
+            }
+        }
+
+        if ( !header.get(4).startsWith("#!genebuild-last-updated") ) {
+            if ( throwIfInvalid ) {
+                throw new UserException.MalformedFile(
+                        "GTF Header line 5 does not contain expected last updated information (" +
+                                "#!genebuild-last-updated): " + header.get(4));
             }
             else {
                 return false;

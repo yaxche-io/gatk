@@ -29,6 +29,7 @@ import java.util.*;
 public class GencodeGtfCodecUnitTest extends GATKBaseTest {
 
     private static final String testResourceDir = publicTestDir + "org/broadinstitute/hellbender/utils/codecs/gencode/";
+    private static final String eColiTestDir = publicTestDir + "org/broadinstitute/hellbender/tools/funcotator/ecoli_ds/gencode/ASM584v2/";
     private static final String xyzTestFile = largeFileTestDir + "gencode.v26.primary_assembly.annotation.XYZ.gtf";
     private static final String gencodeHg19TestFile = largeFileTestDir + "gencode.v19.LargeFile.gtf";
 
@@ -3404,34 +3405,36 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
     public Object[][] canDecodeProvider() {
 
         return new Object[][] {
-                { "a.tsv"     , false },                                    // Wrong File name / extension
-                { "a.table.gz", false },                                    // Wrong File name / extension
-                { "a.bed"     , false },                                    // Wrong File name / extension
-                { "a.bcf"     , false },                                    // Wrong File name / extension
-                { "a.hapmap"  , false },                                    // Wrong File name / extension
-                { "a.refseq"  , false },                                    // Wrong File name / extension
-                { "a.beagle"  , false },                                    // Wrong File name / extension
-                { "a.table"   , false },                                    // Wrong File name / extension
+                { "a.tsv"     , testResourceDir, false },                                    // Wrong File name / extension
+                { "a.table.gz", testResourceDir, false },                                    // Wrong File name / extension
+                { "a.bed"     , testResourceDir, false },                                    // Wrong File name / extension
+                { "a.bcf"     , testResourceDir, false },                                    // Wrong File name / extension
+                { "a.hapmap"  , testResourceDir, false },                                    // Wrong File name / extension
+                { "a.refseq"  , testResourceDir, false },                                    // Wrong File name / extension
+                { "a.beagle"  , testResourceDir, false },                                    // Wrong File name / extension
+                { "a.table"   , testResourceDir, false },                                    // Wrong File name / extension
 
-                { "gencode.v26.annotation.gtf.tsv", false},                 // Wrong File name / extension
-                { "gencode.v26.annotation.tgz"    , false},                 // Wrong File name / extension
-                { "gencode.v26.annotation.tar.gz" , false},                 // Wrong File name / extension
+                { "gencode.v26.annotation.gtf.tsv", testResourceDir, false},                 // Wrong File name / extension
+                { "gencode.v26.annotation.tgz"    , testResourceDir, false},                 // Wrong File name / extension
+                { "gencode.v26.annotation.tar.gz" , testResourceDir, false},                 // Wrong File name / extension
 
-                { "gencode.gtf"                                , false},    // File does not exist
-                { "gencode.v26.primary_assembly.annotation.gtf", false},    // File does not exist
-                { "gencode.v26.long_noncoding_RNAs.gtf"        , false},    // File does not exist
+                { "gencode.gtf"                                , testResourceDir, false},    // File does not exist
+                { "gencode.v26.primary_assembly.annotation.gtf", testResourceDir, false},    // File does not exist
+                { "gencode.v26.long_noncoding_RNAs.gtf"        , testResourceDir, false},    // File does not exist
 
-                { "gencode.invalid_short_header.gtf"           , false},    // File exists, has invalid header
-                { "gencode.invalid_malformed_header.gtf"       , false},    // File exists, has invalid header
-                { "gencode.invalid_malformed_header_desc.gtf"  , false},    // File exists, has invalid header
-                { "gencode.invalid_malformed_header_prov.gtf"  , false},    // File exists, has invalid header
-                { "gencode.invalid_malformed_header_cont.gtf"  , false},    // File exists, has invalid header
-                { "gencode.invalid_malformed_header_form.gtf"  , false},    // File exists, has invalid header
-                { "gencode.invalid_malformed_header_date.gtf"  , false},    // File exists, has invalid header
+                { "gencode.invalid_short_header.gtf"           , testResourceDir, false},    // File exists, has invalid header
+                { "gencode.invalid_malformed_header.gtf"       , testResourceDir, false},    // File exists, has invalid header
+                { "gencode.invalid_malformed_header_desc.gtf"  , testResourceDir, false},    // File exists, has invalid header
+                { "gencode.invalid_malformed_header_prov.gtf"  , testResourceDir, false},    // File exists, has invalid header
+                { "gencode.invalid_malformed_header_cont.gtf"  , testResourceDir, false},    // File exists, has invalid header
+                { "gencode.invalid_malformed_header_form.gtf"  , testResourceDir, false},    // File exists, has invalid header
+                { "gencode.invalid_malformed_header_date.gtf"  , testResourceDir, false},    // File exists, has invalid header
 
-                { "gencode.valid1.gtf"                           , true},   // Valid file
-                { "gencode.valid_gencode_file2.gtf"              , true},   // Valid file
-                { "gencode.and.this.is.a.valid.one.too.table.gtf", true},   // Valid file
+                { "gencode.valid1.gtf"                           , testResourceDir, true},   // Valid file
+                { "gencode.valid_gencode_file2.gtf"              , testResourceDir, true},   // Valid file
+                { "gencode.and.this.is.a.valid.one.too.table.gtf", testResourceDir, true},   // Valid file
+
+                { "Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.44.gtf", eColiTestDir, true},   // Name doesn't start with 'gencode'
         };
     }
 
@@ -3495,6 +3498,46 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
                                  "##date: 2014-07-25" ),
                                  true },                                 // Good Header!
 
+                // -------------
+
+                { Arrays.asList( "#!genome-build ASM584v2",
+                        "#!genome-version ASM584v2",
+                        "#!genome-date 2014-08",
+                        "#!genome-build-accession GCA_000005845.2",
+                        "#!genebuild-last-updated 2014-08" ),
+                        true },                                           // Good General GTF Header!
+
+                { Arrays.asList( "ASM584v2",
+                        "#!genome-version ASM584v2",
+                        "#!genome-date 2014-08",
+                        "#!genome-build-accession GCA_000005845.2",
+                        "#!genebuild-last-updated 2014-08" ),
+                        false },                                           // Bad header - genome-build
+                { Arrays.asList( "#!genome-build ASM584v2",
+                        "ASM584v2",
+                        "#!genome-date 2014-08",
+                        "#!genome-build-accession GCA_000005845.2",
+                        "#!genebuild-last-updated 2014-08" ),
+                        false },                                           // Bad header - genome-version
+                { Arrays.asList( "#!genome-build ASM584v2",
+                        "#!genome-version ASM584v2",
+                        "#2014-08",
+                        "#!genome-build-accession GCA_000005845.2",
+                        "#!genebuild-last-updated 2014-08" ),
+                        false },                                           // Bad header - genome-date
+                { Arrays.asList( "#!genome-build ASM584v2",
+                        "#!genome-version ASM584v2",
+                        "#!genome-date 2014-08",
+                        "#GCA_000005845.2",
+                        "#!genebuild-last-updated 2014-08" ),
+                        false },                                           // Bad header - genome-build-accession
+                { Arrays.asList( "#!genome-build ASM584v2",
+                        "#!genome-version ASM584v2",
+                        "#!genome-date 2014-08",
+                        "#!genome-build-accession GCA_000005845.2",
+                        "#2014-08" ),
+                        false },                                           // Bad header - genebuild-last-updated
+
         };
     }
 
@@ -3514,9 +3557,9 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
     // =============================================================================================================
 
     @Test(dataProvider = "canDecodeProvider")
-    public void testCanDecode(final String name, final boolean expected) {
+    public void testCanDecode(final String fileName, final String containingFolder, final boolean expected) {
         final GencodeGtfCodec gencodeGtfCodec = new GencodeGtfCodec();
-        Assert.assertEquals(gencodeGtfCodec.canDecode(testResourceDir + name), expected, name);
+        Assert.assertEquals(gencodeGtfCodec.canDecode(containingFolder + fileName), expected, fileName);
     }
 
     @Test(dataProvider = "headerProvider")
@@ -3528,7 +3571,7 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
     public void testDecode( final String filePath, final List<GencodeGtfFeature> expected, final String expectedUcscVersion) throws IOException {
         final GencodeGtfCodec gencodeGtfCodec = new GencodeGtfCodec();
 
-        try (BufferedInputStream bufferedInputStream =
+        try (final BufferedInputStream bufferedInputStream =
                      new BufferedInputStream(
                              new FileInputStream(testResourceDir + filePath)
                      )

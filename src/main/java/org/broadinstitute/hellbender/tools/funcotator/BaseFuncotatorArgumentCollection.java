@@ -30,7 +30,11 @@ abstract class BaseFuncotatorArgumentCollection implements Serializable {
 
     /** String representing the b37 version of the homo sapiens reference. */
     protected static String FuncotatorReferenceVersionB37 = "b37";
-    /** String representing the hg19 version of the homo sapiens reference. */
+    /**
+     * String representing the hg19 version of the homo sapiens reference.
+     * This variable is necessary to resolve the differences between b37 and hg19 when
+     * dealing with Homo Sapiens samples.
+     */
     protected static String FuncotatorReferenceVersionHg19 = "hg19";
     /** String representing the hg38 version of the homo sapiens reference. */
     protected static String FuncotatorReferenceVersionHg38 = "hg38";

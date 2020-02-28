@@ -6,7 +6,7 @@
 | Data Source Version Information             |
 +---------------------------------------------+ 
 
-Version:          0.1.20190924ecoli
+Version:          v1.6.20200227_ecoli
 Use Case:         Ecoli
 Source:           GATK Github
 Alternate Source: N/A
