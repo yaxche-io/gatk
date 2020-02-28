@@ -23,9 +23,9 @@ import org.broadinstitute.hellbender.tools.funcotator.dataSources.gencode.Gencod
 import org.broadinstitute.hellbender.tools.funcotator.dataSources.gencode.GencodeFuncotationFactory;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
-import org.broadinstitute.hellbender.utils.codecs.gencode.GencodeGtfFeature;
-import org.broadinstitute.hellbender.utils.codecs.gencode.GencodeGtfFeatureBaseData;
-import org.broadinstitute.hellbender.utils.codecs.gencode.GencodeGtfTranscriptFeature;
+import org.broadinstitute.hellbender.utils.codecs.gtf.GencodeGtfFeature;
+import org.broadinstitute.hellbender.utils.codecs.gtf.GencodeGtfFeatureBaseData;
+import org.broadinstitute.hellbender.utils.codecs.gtf.GencodeGtfTranscriptFeature;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.param.ParamUtils;
 import org.broadinstitute.hellbender.utils.reference.ReferenceBases;

@@ -1,4 +1,4 @@
-package org.broadinstitute.hellbender.utils.codecs.gencode;
+package org.broadinstitute.hellbender.utils.codecs.gtf;
 
 /**
  * A Gencode GTF Feature representing a stop codon.

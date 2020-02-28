@@ -1,4 +1,4 @@
-package org.broadinstitute.hellbender.utils.codecs.gencode;
+package org.broadinstitute.hellbender.utils.codecs.gtf;
 
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.annotation.Strand;
@@ -3433,8 +3433,8 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
                 { "gencode.valid1.gtf"                           , testResourceDir, true},   // Valid file
                 { "gencode.valid_gencode_file2.gtf"              , testResourceDir, true},   // Valid file
                 { "gencode.and.this.is.a.valid.one.too.table.gtf", testResourceDir, true},   // Valid file
-
-                { "Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.44.gtf", eColiTestDir, true},   // Name doesn't start with 'gencode'
+//
+                { "Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.44.gtf", eColiTestDir, false},   // Not valid GENCODE GTF
         };
     }
 
@@ -3505,7 +3505,7 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
                         "#!genome-date 2014-08",
                         "#!genome-build-accession GCA_000005845.2",
                         "#!genebuild-last-updated 2014-08" ),
-                        true },                                           // Good General GTF Header!
+                        false },                                           // Good ENSEMBL GTF Header, bad GENCODE header!
 
                 { Arrays.asList( "ASM584v2",
                         "#!genome-version ASM584v2",
@@ -3564,7 +3564,8 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
 
     @Test(dataProvider = "headerProvider")
     public void testValidateHeader( final List<String> header, final boolean expected ) {
-        Assert.assertEquals( GencodeGtfCodec.validateHeader(header), expected );
+        final GencodeGtfCodec gencodeGtfCodec = new GencodeGtfCodec();
+        Assert.assertEquals( gencodeGtfCodec.validateHeader(header), expected );
     }
 
     @Test(dataProvider = "decodeTestProvider")
@@ -3591,7 +3592,8 @@ public class GencodeGtfCodecUnitTest extends GATKBaseTest {
                 final GencodeGtfFeature feature = gencodeGtfCodec.decode(lineIterator);
 
                 Assert.assertTrue(expectedIterator.hasNext());
-                for (final GencodeGtfFeature subFeature : feature.getAllFeatures()) {
+
+                for ( final GencodeGtfFeature subFeature : feature.getAllFeatures() ) {
                     Assert.assertEquals(subFeature.getUcscGenomeVersion(), expectedUcscVersion);
                 }
                 Assert.assertEquals(feature, expectedIterator.next());

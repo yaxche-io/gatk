@@ -1,4 +1,4 @@
-package org.broadinstitute.hellbender.utils.codecs.gencode;
+package org.broadinstitute.hellbender.utils.codecs.gtf;
 
 import java.util.ArrayList;
 import java.util.List;

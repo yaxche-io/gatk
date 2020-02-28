@@ -3,7 +3,7 @@ package org.broadinstitute.hellbender.tools.funcotator.dataSources.gencode;
 import htsjdk.tribble.annotation.Strand;
 import org.broadinstitute.hellbender.tools.funcotator.FuncotatorTestConstants;
 import org.broadinstitute.hellbender.utils.Utils;
-import org.broadinstitute.hellbender.utils.codecs.gencode.*;
+import org.broadinstitute.hellbender.utils.codecs.gtf.*;
 import org.broadinstitute.hellbender.utils.param.ParamUtils;
 
 import java.util.ArrayList;

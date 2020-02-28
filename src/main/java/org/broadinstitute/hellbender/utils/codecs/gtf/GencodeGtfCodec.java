@@ -1,19 +1,16 @@
-package org.broadinstitute.hellbender.utils.codecs.gencode;
+package org.broadinstitute.hellbender.utils.codecs.gtf;
 
 import com.google.common.annotations.VisibleForTesting;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.AbstractFeatureCodec;
-import htsjdk.tribble.FeatureCodecHeader;
-import htsjdk.tribble.readers.*;
+import htsjdk.tribble.readers.LineIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.exceptions.UserException;
 
-import java.io.*;
-import java.nio.file.Files;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -58,23 +55,18 @@ import java.util.regex.Pattern;
  *
  * Created by jonn on 7/21/17.
  */
-final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeature, LineIterator> {
+final public class GencodeGtfCodec extends AbstractGtfCodec<GencodeGtfFeature> {
 
-    static final Logger logger = LogManager.getLogger(GencodeGtfCodec.class);
+    private static final Logger logger = LogManager.getLogger(GencodeGtfCodec.class);
 
-    public static final int GENCODE_GTF_MIN_VERSION_NUM_INCLUSIVE = 19;
+    private static final int GENCODE_GTF_MIN_VERSION_NUM_INCLUSIVE = 19;
 
     /**
      * Maximum version of gencode that will not generate a warning.  This parser will still attempt to parse versions above this number, but a warning about potential errors will appear.
      */
-    public static final int GENCODE_GTF_MAX_VERSION_NUM_INCLUSIVE = 28;
+    private static final int GENCODE_GTF_MAX_VERSION_NUM_INCLUSIVE = 28;
 
-    public static final String GENCODE_GTF_FILE_EXTENSION = "gtf";
     public static final String GENCODE_GTF_FILE_PREFIX = "gencode";
-
-    private static final String COMMENT_START = "##";
-
-    private static final String GTF_FIELD_DELIMITER = "\t";
 
     private static final int FEATURE_TYPE_FIELD_INDEX = 2;
 
@@ -119,35 +111,16 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
     }
 
     // ============================================================================================================
-    // Trivial override methods that are pulled form AsciiFeatureCodec
-    // This was done to ensure that this was a reasonable Codec class (with good interfaces for reading features).
 
     @Override
-    public void close(final LineIterator lineIterator) {
-        CloserUtil.close(lineIterator);
+    int getCurrentLineNumber() {
+        return currentLineNum;
     }
 
     @Override
-    public boolean isDone(final LineIterator lineIterator) {
-        return !lineIterator.hasNext();
+    List<String> getHeader() {
+        return header;
     }
-
-    @Override
-    public LineIterator makeSourceFromStream(final InputStream bufferedInputStream) {
-        return new LineIteratorImpl(new SynchronousLineReader(bufferedInputStream));
-    }
-
-    @Override
-    public FeatureCodecHeader readHeader(final LineIterator lineIterator) throws IOException {
-        return new FeatureCodecHeader(readActualHeader(lineIterator), FeatureCodecHeader.NO_HEADER_END);
-    }
-
-    @Override
-    public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
-        return new AsciiLineReaderIterator(AsciiLineReader.from(bufferedInputStream));
-    }
-
-    // ============================================================================================================
 
     @Override
     public GencodeGtfFeature decode(final LineIterator lineIterator) {
@@ -170,7 +143,7 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
             // We must assume we can get header lines.
             // If we get a header line, we return null.
             // This allows indexing to work.
-            if ( line.startsWith(COMMENT_START) ) {
+            if ( line.startsWith(getLineComment()) ) {
                 lineIterator.next();
                 return null;
             }
@@ -178,7 +151,7 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
             // Split the line into different GTF Fields
             // Note that we're using -1 as the limit so that empty tokens will still be counted
             // (as opposed to discarded).
-            final String[] splitLine = line.split(GTF_FIELD_DELIMITER, -1);
+            final String[] splitLine = line.split(FIELD_DELIMITER, -1);
 
             // Ensure the file is at least trivially well-formed:
             if (splitLine.length != NUM_COLUMNS) {
@@ -293,17 +266,8 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
         return decodedFeature;
     }
 
-    /**
-     * Read the {@code header} from the given {@link LineIterator} for the GENCODE GTF File.
-     * Will also validate this {@code header} for correctness before returning it.
-     * Throws a {@link UserException.MalformedFile} if the header is malformed.
-     *
-     * This must be called before {@link GencodeGtfCodec#decode(LineIterator)}
-     *
-     * @param reader The {@link LineIterator} from which to read the header.
-     * @return The header as read from the {@code reader}
-     */
-    private List<String> readActualHeader(final LineIterator reader) {
+    @Override
+    List<String> readActualHeader(final LineIterator reader) {
 
         // Make sure we start with a clear header:
         header.clear();
@@ -311,28 +275,8 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
         // Clear our version number too:
         versionNumber = -1;
 
-        int numHeaderLinesRead = 0;
-        while ( reader.hasNext() ) {
-            String line = reader.peek();
-
-            // The file will start with commented out lines.
-            // Grab them until there are no more commented out lines.
-            if ( line.startsWith(COMMENT_START) ) {
-
-                // Sanity check for if a file has
-                // WAY too many commented out lines at the top:
-                if (numHeaderLinesRead > HEADER_NUM_LINES) {
-                    throw new UserException.MalformedFile("File header is longer than expected: " + numHeaderLinesRead + " > " + HEADER_NUM_LINES);
-                }
-
-                header.add(line);
-                reader.next();
-                ++numHeaderLinesRead;
-            }
-            else {
-                break;
-            }
-        }
+        // Read in the header lines:
+        ingestHeaderLines(reader);
 
         // Validate our header:
         validateHeader(header, true);
@@ -447,60 +391,34 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
     }
 
     @Override
-    public boolean canDecode(final String inputFilePath) {
-
-        boolean canDecode;
+    boolean passesFileNameCheck(final String inputFilePath) {
         try {
-            // Simple file and name checks to start with:
             final Path p = IOUtil.getPath(inputFilePath);
 
-            canDecode =  p.getFileName().toString().toLowerCase().endsWith("." + GENCODE_GTF_FILE_EXTENSION);
-
-            if (canDecode) {
-
-                // Crack open the file and look at the top of it:
-                try ( final BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(p))) ) {
-
-                    // TThe first HEADER_NUM_LINES compose the header of a valid GTF File:
-                    final List<String> headerLines = new ArrayList<>(HEADER_NUM_LINES);
-
-                    for (int i = 0; i < HEADER_NUM_LINES; ++i) {
-                        final String line = br.readLine();
-                        if ( line == null ) {
-                            break;
-                        }
-                        headerLines.add( line );
-                    }
-
-                    // Validate our header:
-                    canDecode = validateHeader(headerLines);
-                }
-
-            }
+            return p.getFileName().toString().toLowerCase().startsWith(GENCODE_GTF_FILE_PREFIX) &&
+                    p.getFileName().toString().toLowerCase().endsWith("." + GTF_FILE_EXTENSION);
         }
         catch (final FileNotFoundException ex) {
-            logger.warn("File does not exist! - " + inputFilePath + " - returning can decode as failure.");
-            canDecode = false;
+            logger.warn("File does not exist! - " + inputFilePath + " - returning name check as failure.");
         }
         catch (final IOException ex) {
-            logger.warn("Caught IOException on file: " + inputFilePath + " - returning can decode as failure.");
-            canDecode = false;
+            logger.warn("Caught IOException on file: " + inputFilePath + " - returning name check as failure.");
         }
 
-        return canDecode;
+        return false;
+    }
+
+    @Override
+    String getLineComment() {
+        return "##";
+    }
+
+    @Override
+    String  getGtfFileType() {
+        return "GENCODE";
     }
 
     // ============================================================================================================
-
-    /**
-     * Check if the given header of a tentative GENCODE GTF file is, in fact, the header to such a file.
-     * @param header Header lines to check for conformity to GENCODE GTF specifications.
-     * @return true if the given {@code header} is that of a GENCODE GTF file; false otherwise.
-     */
-    @VisibleForTesting
-    static boolean validateHeader(final List<String> header) {
-        return validateHeader(header, false);
-    }
 
     /**
      * Check if the given header of a tentative GENCODE GTF file is, in fact, the header to such a file.
@@ -511,11 +429,7 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
      * @return true if the given {@code header} is that of a GENCODE GTF file; false otherwise.
      */
     @VisibleForTesting
-    static boolean validateHeader(final List<String> header, final boolean throwIfInvalid) {
-        return validateGencodeHeader(header, throwIfInvalid) || validateGeneralGtfHeader(header, throwIfInvalid);
-    }
-
-    private static boolean validateGencodeHeader(final List<String> header, final boolean throwIfInvalid) {
+    boolean validateHeader(final List<String> header, final boolean throwIfInvalid) {
         if ( header.size() != HEADER_NUM_LINES) {
             if ( throwIfInvalid ) {
                 throw new UserException.MalformedFile(
@@ -528,15 +442,8 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
         }
 
         // Check the normal commented fields:
-        if ( !header.get(0).startsWith("##description:") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GENCODE GTF Header line 1 does not contain expected description specification (" +
-                                "##description:): " + header.get(0));
-            }
-            else {
-                return false;
-            }
+        if ( !checkHeaderLineStartsWith(header,0, "description:") ) {
+            return false;
         }
 
         if ( !header.get(0).contains("version") ) {
@@ -589,122 +496,10 @@ final public class GencodeGtfCodec extends AbstractFeatureCodec<GencodeGtfFeatur
             }
         }
 
-        if ( !header.get(1).startsWith("##provider: GENCODE") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GENCODE GTF Header line 2 does not contain expected provider specification (" +
-                                "##provider: GENCODE): " + header.get(1));
-            }
-            else {
-                return false;
-            }
-        }
-
-        if ( !header.get(2).startsWith("##contact: gencode") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GENCODE GTF Header line 3 does not contain expected contact information (" +
-                                "##contact: gencode): " + header.get(2));
-            }
-            else {
-                return false;
-            }
-        }
-
-        if ( !header.get(3).startsWith("##format: gtf") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GENCODE GTF Header line 4 does not contain expected format specification (" +
-                                "##format: gtf): " + header.get(3));
-            }
-            else {
-                return false;
-            }
-        }
-
-        if ( !header.get(4).startsWith("##date:") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GENCODE GTF Header line 5 does not contain expected date information (" +
-                                "##date:): " + header.get(4));
-            }
-            else {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static boolean validateGeneralGtfHeader(final List<String> header, final boolean throwIfInvalid) {
-        if ( header.size() != HEADER_NUM_LINES) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GTF Header is of unexpected length: " +
-                                header.size() + " != " + HEADER_NUM_LINES);
-            }
-            else {
-                return false;
-            }
-        }
-
-        // Check the normal commented fields:
-        if ( !header.get(0).startsWith("#!genome-build") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GTF Header line 1 does not contain expected genome build specification (" +
-                                "#!genome-build): " + header.get(0));
-            }
-            else {
-                return false;
-            }
-        }
-
-        if ( !header.get(1).startsWith("#!genome-version") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GTF Header line 2 does not contain expected version specification (" +
-                                "#!genome-version): " + header.get(1));
-            }
-            else {
-                return false;
-            }
-        }
-
-        if ( !header.get(2).startsWith("#!genome-date") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GTF Header line 3 does not contain expected contact information (" +
-                                "#!genome-date): " + header.get(2));
-            }
-            else {
-                return false;
-            }
-        }
-
-        if ( !header.get(3).startsWith("#!genome-build-accession") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GTF Header line 4 does not contain expected accession specification (" +
-                                "#!genome-build-accession): " + header.get(3));
-            }
-            else {
-                return false;
-            }
-        }
-
-        if ( !header.get(4).startsWith("#!genebuild-last-updated") ) {
-            if ( throwIfInvalid ) {
-                throw new UserException.MalformedFile(
-                        "GTF Header line 5 does not contain expected last updated information (" +
-                                "#!genebuild-last-updated): " + header.get(4));
-            }
-            else {
-                return false;
-            }
-        }
-
-        return true;
+        return checkHeaderLineStartsWith(header, 1, "provider: GENCODE") &&
+                checkHeaderLineStartsWith(header, 2, "contact: gencode") &&
+                checkHeaderLineStartsWith(header, 3, "format: gtf") &&
+                checkHeaderLineStartsWith(header, 4, "date:");
     }
 
     /**

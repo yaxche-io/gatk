@@ -1,4 +1,4 @@
-package org.broadinstitute.hellbender.utils.codecs.gencode;
+package org.broadinstitute.hellbender.utils.codecs.gtf;
 
 import htsjdk.tribble.annotation.Strand;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
