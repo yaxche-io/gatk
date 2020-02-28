@@ -16,6 +16,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public abstract class AbstractGtfCodec<T extends Feature> extends AbstractFeatureCodec<T, LineIterator> {
@@ -30,6 +31,9 @@ public abstract class AbstractGtfCodec<T extends Feature> extends AbstractFeatur
     // Private/Protected Static Members:
     static final int HEADER_NUM_LINES = 5;
     static final String FIELD_DELIMITER = "\t";
+
+    static final int NUM_COLUMNS = 9;
+    static final int FEATURE_TYPE_FIELD_INDEX = 2;
 
     //==================================================================================================================
     // Private Members:
@@ -120,8 +124,101 @@ public abstract class AbstractGtfCodec<T extends Feature> extends AbstractFeatur
     //==================================================================================================================
     // Static Methods:
 
+    /**
+     * Aggregates the given feature sets into a single gene feature.
+     *
+     * The given gene is updated using modifiers.
+     * {@code exonStore} and {@code leafFeatureStore} are cleared of all data.
+     *
+     * @param gene {@link GencodeGtfGeneFeature} into which to aggregate features.
+     * @param transcript {@link GencodeGtfTranscriptFeature} to insert into {@code gene}
+     * @param exonStore {@link List} of {@link GencodeGtfExonFeature}s to insert into corresponding {@link GencodeGtfTranscriptFeature} {@code transcript}
+     * @param leafFeatureStore {@link List} of {@link GencodeGtfFeature}s to insert into corresponding {@link GencodeGtfExonFeature} objects in {@code exonStore}
+     */
+    static void aggregateRecordsIntoGeneFeature(final GencodeGtfGeneFeature gene,
+                                                final GencodeGtfTranscriptFeature transcript,
+                                                final List< GencodeGtfExonFeature > exonStore,
+                                                final List< GencodeGtfFeature > leafFeatureStore ) {
+
+        // OK, we go through the record and consolidate the sub parts of the record.
+        // We must consolidate these records through grouping by genomic position.
+
+        // Loop through the Exons and put the correct leaf features into each:
+        for ( final GencodeGtfExonFeature exon : exonStore ) {
+            for ( final Iterator<GencodeGtfFeature> iterator = leafFeatureStore.iterator(); iterator.hasNext(); ) {
+
+                final GencodeGtfFeature feature = iterator.next();
+
+                // Features that are within the extents of an exon belong in that exon:
+                if ( exon.contains(feature) ) {
+
+                    final GencodeGtfFeature.FeatureType featureType = feature.getFeatureType();
+
+                    // Add the feature to the correct place in the exon:
+                    switch (featureType) {
+                        case CDS:
+                            exon.setCds((GencodeGtfCDSFeature) feature);
+                            break;
+                        case START_CODON:
+                            exon.setStartCodon((GencodeGtfStartCodonFeature) feature);
+                            break;
+                        case STOP_CODON:
+                            exon.setStopCodon((GencodeGtfStopCodonFeature) feature);
+                            break;
+                        case UTR:
+                            transcript.addUtr((GencodeGtfUTRFeature) feature);
+                            break;
+                        case SELENOCYSTEINE:
+                            transcript.addSelenocysteine(((GencodeGtfSelenocysteineFeature) feature));
+                            break;
+                        default:
+                            throw new UserException.MalformedFile(
+                                    "Found unexpected Feature Type in GENCODE GTF File (line " +
+                                            feature.getFeatureOrderNumber() + "): " +
+                                            featureType.toString()
+                            );
+                    }
+
+                    // We have used this iterator item.
+                    // We should remove it now so we don't keep going through the list each exon.
+                    iterator.remove();
+                }
+            }
+
+            // Now insert this exon into the transcript:
+            transcript.addExon(exon);
+        }
+
+        // Add in the transcript:
+        gene.addTranscript(transcript);
+
+        // Clear the input data:
+        exonStore.clear();
+        leafFeatureStore.clear();
+    }
+
     //==================================================================================================================
     // Instance Methods:
+
+    /**
+     * Split the given line in a GTF file into fields.
+     * Throws a {@link UserException} if the file is not valid.
+     * @param line {@link String} containing one line of a GTF file to split.
+     * @return A {@link String[]} with each entry containing a field from the GTF line.
+     */
+    String[] splitGtfLine(final String line) {
+        // Split the line into different GTF Fields
+        // Note that we're using -1 as the limit so that empty tokens will still be counted
+        // (as opposed to discarded).
+        final String[] splitLine = line.split(FIELD_DELIMITER, -1);
+
+        // Ensure the file is at least trivially well-formed:
+        if (splitLine.length != NUM_COLUMNS) {
+            throw new UserException.MalformedFile("Found an invalid number of columns in the given GTF file on line "
+                    + getCurrentLineNumber() + " - Given: " + splitLine.length + " Expected: " + NUM_COLUMNS + " : " + line);
+        }
+        return splitLine;
+    }
 
     /**
      * Read in lines from the given {@link LineIterator} and put them in the header file.
